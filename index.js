@@ -6,7 +6,6 @@ const port = process.env.PORT || 3000;
 const geoIpifyApiKey = process.env.geoIpifyApiKey;
 const openWeatherApiKey = process.env.openWeatherApiKey;
 
-
 app.get('/api/hello', async (req, res) => {
     const visitorName = req.query.visitor_name || 'Visitor';
     const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
