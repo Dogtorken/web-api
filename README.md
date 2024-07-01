@@ -1,0 +1,1 @@
+simple web api that collects user location for weather updates
