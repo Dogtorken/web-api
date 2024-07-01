@@ -2,32 +2,43 @@ const express = require('express');
 const axios = require('axios');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
-// Middleware to get user's IP address
-app.use((req, res, next) => {
-    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    req.userIP = ip;
-    next();
-});
 
-// Route to get user's location
-app.get('/location', async (req, res) => {
+app.get('/api/hello', async (req, res) => {
+    const visitorName = req.query.visitor_name || 'Visitor';
+    const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+
     try {
-        const ip = req.userIP;
-        // Use a free IP geolocation API (e.g., ipapi.co)
-        const response = await axios.get(`https://ipapi.co/${ip}/json/`);
-        const locationData = response.data;
+        // Get geolocation data
+        const geoResponse = await axios.get(`https://geo.ipify.org/api/v2/country`, {
+            params: {
+                apiKey: geoIpifyApiKey,
+                ipAddress: clientIp
+            }
+        });
+        const { city } = geoResponse.data.location;
+
+        // Get weather data
+        const weatherResponse = await axios.get(`https://api.openweathermap.org/data/2.5/weather`, {
+            params: {
+                q: city,
+                appid: openWeatherApiKey,
+                units: 'metric'
+            }
+        });
+        const temperature = weatherResponse.data.main.temp;
 
         res.json({
-            ip,
-            location: locationData,
-            });
+            client_ip: clientIp,
+            location: city,
+            greeting: `Hello, ${visitorName}!, the temperature is ${temperature} degrees Celsius in ${city}`
+        });
     } catch (error) {
-        res.status(500).send('Error retrieving location data');
+        res.status(500).json({ error: 'Error fetching data' });
     }
 });
 
 app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+    console.log(`Server running on port ${port}`);
 });
