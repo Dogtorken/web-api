@@ -14,22 +14,31 @@ app.get('/api/hello/', async (req, res) => {
     const visitorName = req.query.visitor_name;
 
     try {
-        // User's public IP address 
-        const ipResponse = await axios.get('https://api.ipify.org?format=json');
-        const clientIp = ipResponse.data.ip;
+        // Get client's public IP address from the request headers
+        const clientIp = req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress;
+        console.log(`Client IP: ${clientIp}`);
 
         // Location data using GeoIPify
         const geoResponse = await axios.get(`https://geo.ipify.org/api/v2/country,city?apiKey=${process.env.GEOIPIFY_API_KEY}&ipAddress=${clientIp}`);
         const locationData = geoResponse.data.location;
-        let city = locationData.region;
-        let cityIndex = city.indexOf(" ");
-        if (cityIndex !== -1) {
-            city = city.slice(0, cityIndex);
+        console.log(`GeoIPify Response: ${JSON.stringify(locationData)}`);
+
+        let city = locationData.city || locationData.region;
+
+        // If city is still empty, handle fallback or default city
+        if (!city) {
+            city = 'Lagos'; // Default city if no city data is available
+            console.log(`No city found, using default city: ${city}`);
         }
 
+        // Clean up the city name (remove spaces or any other characters)
+        city = city.trim(); // Trim whitespace
+        console.log(`City: ${city}`);
+
         // Weather data using OpenWeather
-        const weatherResponse = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${process.env.OPENWEATHER_API_KEY}`);
+        const weatherResponse = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&units=metric&appid=${process.env.OPENWEATHER_API_KEY}`);
         const temperature = weatherResponse.data.main.temp;
+        console.log(`Weather Response: ${JSON.stringify(weatherResponse.data)}`);
 
         // Dynamic greeting response
         const greeting = `Hello, ${visitorName}! The temperature is ${temperature} degrees Celsius in ${city}.`;
@@ -42,7 +51,7 @@ app.get('/api/hello/', async (req, res) => {
 
     } catch (error) {
         console.error('Error fetching data', error);
-        res.status(500).json({ error: 'An error occurred while fetching data.' });
+        res.status(500).json({ error: 'An error occurred while fetching data.', details: error.message });
     }
 });
 
