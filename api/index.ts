@@ -15,8 +15,14 @@ app.get('/api/hello/', async (req, res) => {
 
     try {
         // User's public IP address 
-        const ipResponse = await axios.get('https://api.ipify.org?format=json');
-        const clientIp = ipResponse.data.ip;
+        //const ipResponse = await axios.get('https://api.ipify.org?format=json');
+        //const clientIp = ipResponse.data.ip;
+        const clientIp =
+        req.headers["cf-connecting-ip"] ||
+        req.headers["x-real-ip"] ||
+        req.headers["x-forwarded-for"] ||
+        req.socket.remoteAddress ||
+        "";
 
         // Location data using GeoIPify
         const geoResponse = await axios.get(`https://geo.ipify.org/api/v2/country,city?apiKey=${process.env.GEOIPIFY_API_KEY}&ipAddress=${clientIp}`);
