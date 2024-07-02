@@ -14,12 +14,14 @@ app.get('/api/hello/', async (req, res) => {
     const visitorName = req.query.visitor_name;
 
     try {
-        const clientIp = req.ip || req.connection.remoteAddress;
+        // User's public IP address 
+        const ipResponse = await axios.get('https://api.ipify.org?format=json');
+        const clientIp = ipResponse.data.ip;
+
         // Location data using GeoIPify
-        const geoResponse = await axios.get(`https://geo.ipify.org/api/v2/country?apiKey=${process.env.GEOIPIFY_API_KEY}&ipAddress`);
-        //const userIp = geoResponse.data.ip;
+        const geoResponse = await axios.get(`https://geo.ipify.org/api/v2/country,city?apiKey=${process.env.GEOIPIFY_API_KEY}&ipAddress=${clientIp}`);
         const locationData = geoResponse.data.location;
-        let city = geoResponse.data.location.region;
+        let city = locationData.region;
         let cityIndex = city.indexOf(" ");
         if (cityIndex !== -1) {
             city = city.slice(0, cityIndex);
@@ -29,13 +31,14 @@ app.get('/api/hello/', async (req, res) => {
         const weatherResponse = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${process.env.OPENWEATHER_API_KEY}`);
         const temperature = weatherResponse.data.main.temp;
 
-        // Dynamic greeting respons
+        // Dynamic greeting response
         const greeting = `Hello, ${visitorName}! The temperature is ${temperature} degrees Celsius in ${city}.`;
 
         res.json({
             client_ip: clientIp,
             location: city,
-            greeting});
+            greeting
+        });
 
     } catch (error) {
         console.error('Error fetching data', error);
