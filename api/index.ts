@@ -5,7 +5,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const app = express();
-app.set('trust proxy', true) 
+app.set('trust proxy', true);
 const port = process.env.PORT || 7000;
 
 app.use(express.json());
@@ -14,9 +14,10 @@ app.get('/api/hello/', async (req, res) => {
     const visitorName = req.query.visitor_name;
 
     try {
+        const clientIp = req.ip || req.connection.remoteAddress;
         // Location data using GeoIPify
         const geoResponse = await axios.get(`https://geo.ipify.org/api/v2/country?apiKey=${process.env.GEOIPIFY_API_KEY}&ipAddress`);
-        const userIp = geoResponse.data.ip;
+        //const userIp = geoResponse.data.ip;
         const locationData = geoResponse.data.location;
         let city = geoResponse.data.location.region;
         let cityIndex = city.indexOf(" ");
@@ -32,7 +33,7 @@ app.get('/api/hello/', async (req, res) => {
         const greeting = `Hello, ${visitorName}! The temperature is ${temperature} degrees Celsius in ${city}.`;
 
         res.json({
-            client_ip: userIp,
+            client_ip: clientIp,
             location: city,
             greeting});
 
